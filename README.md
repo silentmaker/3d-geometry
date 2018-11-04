@@ -1,21 +1,3 @@
 # 3d-geometry
 
-## Project setup
-```
-yarn install
-```
-
-### Compiles and hot-reloads for development
-```
-yarn run serve
-```
-
-### Compiles and minifies for production
-```
-yarn run build
-```
-
-### Lints and fixes files
-```
-yarn run lint
-```
+[Demo](https://silentmaker.github.io/3d-geometry)
