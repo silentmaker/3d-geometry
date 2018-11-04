@@ -4,7 +4,10 @@
 
 <script>
 import * as THREE from 'three';
-import defaultAvatar from '../assets/images/default.png';
+import defaultOne from '../assets/images/default1.png';
+import defaultTwo from '../assets/images/default2.png';
+import defaultThree from '../assets/images/default3.png';
+import defaultFour from '../assets/images/default4.png';
 
 export default {
   name: 'fancy-avatars',
@@ -71,52 +74,51 @@ export default {
       this.$refs.container.appendChild(this.renderer.domElement);
     },
     initAvatars() {
-      const textureLoader = new THREE.TextureLoader();
-      const avatarImage = textureLoader.load(defaultAvatar);
-      const material = new THREE.SpriteMaterial({
-        map: avatarImage,
-        color: 0xffffff,
-        fog: true,
-      });
+      const defaults = [defaultOne, defaultTwo, defaultThree, defaultFour];
+      this.avatarImages = defaults.map(item => new THREE.TextureLoader().load(item));
       this.group = new THREE.Group();
       switch (this.type) {
         case 'plane':
-          this.initPlaneGroup(material);
+          this.initPlaneGroup();
           break;
         case 'sphere':
-          this.initSphereGroup(material);
+          this.initSphereGroup();
           break;
         case 'cylinder':
-          this.initCylinderGroup(material);
+          this.initCylinderGroup();
           break;
         case 'curve':
-          this.initCurveGroup(material);
+          this.initCurveGroup();
           break;
         default:
-          this.initSphereGroup(material);
+          this.initSphereGroup();
           break;
       }
     },
-    initPlaneGroup(material) {
+    initPlaneGroup() {
       const distance = this.size * 1.5;
       const rowLimit = Math.floor(window.innerWidth * 2 / distance) - 2;
       for (let i = 0; i < this.amount; i += 1) {
         const x = ((i % rowLimit) + 2) * distance - window.innerWidth;
         const y = (-Math.floor(i / rowLimit) - 2) * distance + window.innerHeight;
         const z = 10;
+        const index = Math.floor(Math.random() * 4);
+        const material = new THREE.SpriteMaterial({ map: this.avatarImages[index] });
         const avatar = new THREE.Sprite(material);
         avatar.position.set(x, y, z);
         this.group.add(avatar);
       }
       this.scene.add(this.group);
     },
-    initSphereGroup(material) {
+    initSphereGroup() {
       for (let i = 0; i < this.amount; i += 1) {
         const phi = Math.acos(-1 + (2 * i) / this.amount);
         const theta = Math.sqrt(this.amount * Math.PI) * phi;
         const x = Math.cos(theta) * Math.sin(phi);
         const y = Math.sin(theta) * Math.sin(phi);
         const z = Math.cos(phi);
+        const index = Math.floor(Math.random() * 4);
+        const material = new THREE.SpriteMaterial({ map: this.avatarImages[index] });
         const avatar = new THREE.Sprite(material);
         avatar.position.set(x, y, z);
         avatar.position.normalize();
@@ -125,12 +127,14 @@ export default {
       }
       this.scene.add(this.group);
     },
-    initCylinderGroup(material) {
+    initCylinderGroup() {
       for (let i = 0; i < this.amount; i += 1) {
         const phi = (i % 30) / 30 * 2 * Math.PI;
         const x = Math.cos(phi);
         const y = -i / 100;
         const z = Math.sin(phi);
+        const index = Math.floor(Math.random() * 4);
+        const material = new THREE.SpriteMaterial({ map: this.avatarImages[index] });
         const avatar = new THREE.Sprite(material);
         avatar.position.set(x, y, z);
         avatar.position.multiplyScalar(window.innerHeight * 0.5);
@@ -138,13 +142,15 @@ export default {
       }
       this.scene.add(this.group);
     },
-    initCurveGroup(material) {
+    initCurveGroup() {
       const separation = 100;
       const amountX = 16;
       for (let i = 0; i < this.amount; i += 1) {
         const x = (i % amountX) * separation - window.innerWidth / 2;
         const z = Math.floor(i / amountX) * -separation / 2;
         const y = (Math.sin(x) + Math.sin(z)) * 300;
+        const index = Math.floor(Math.random() * 4);
+        const material = new THREE.SpriteMaterial({ map: this.avatarImages[index] });
         const avatar = new THREE.Sprite(material);
         avatar.position.set(x, y, z + 300);
         this.group.add(avatar);
