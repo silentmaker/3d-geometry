@@ -1,5 +1,5 @@
 <template>
-  <div><slot></slot></div>
+  <div ref="container"></div>
 </template>
 
 <script>
@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import defaultAvatar from '../assets/images/default.png';
 
 export default {
-  name: 'Sphere',
+  name: 'fancy-avatars',
   props: {
     type: {
       type: String,
@@ -17,7 +17,11 @@ export default {
       type: Number,
       default: 200,
     },
-    members: {
+    size: {
+      type: Number,
+      default: 80,
+    },
+    avatars: {
       type: Array,
       default: () => ([]),
     },
@@ -38,14 +42,14 @@ export default {
     }
   },
   watch: {
-    amount() {
-      this.needUpdated = true;
-    },
-    type() {
-      this.needUpdated = true;
-    },
+    type: 'requestUpdate',
+    amount: 'requestUpdate',
+    size: 'requestUpdate',
   },
   methods: {
+    requestUpdate() {
+      this.needUpdated = true;
+    },
     checkWebGL() {
       try {
         const canvas = document.createElement('canvas');
@@ -64,7 +68,7 @@ export default {
       this.renderer.setClearColor(0xffffff, 0);
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       this.renderer.setPixelRatio(window.devicePixelRatio);
-      document.body.appendChild(this.renderer.domElement);
+      this.$refs.container.appendChild(this.renderer.domElement);
     },
     initAvatars() {
       const textureLoader = new THREE.TextureLoader();
@@ -94,10 +98,11 @@ export default {
       }
     },
     initPlaneGroup(material) {
-      const rowLimit = Math.floor(window.innerWidth * 2 / 120) - 2;
+      const distance = this.size * 1.5;
+      const rowLimit = Math.floor(window.innerWidth * 2 / distance) - 2;
       for (let i = 0; i < this.amount; i += 1) {
-        const x = ((i % rowLimit) + 2) * 120 - window.innerWidth;
-        const y = (-Math.floor(i / rowLimit) - 2) * 120 + window.innerHeight;
+        const x = ((i % rowLimit) + 2) * distance - window.innerWidth;
+        const y = (-Math.floor(i / rowLimit) - 2) * distance + window.innerHeight;
         const z = 10;
         const avatar = new THREE.Sprite(material);
         avatar.position.set(x, y, z);
@@ -153,13 +158,11 @@ export default {
     render() {
       const time = Date.now() / 1000;
       const l = this.group.children.length;
-      // Avatar Scaling & Fading
       for (let i = 0; i < l; i += 1) {
         const avatar = this.group.children[i];
         const { material } = avatar;
         const scale = Math.sin(time + avatar.position.x * 0.01) * 0.2 + 1.0;
-        // TODO: find suitable width
-        const imageWidth = 80;
+        const imageWidth = this.size;
         avatar.scale.set(scale * imageWidth, scale * imageWidth, 1.0);
         material.opacity = Math.sin(time + avatar.position.x * 0.01) * 0.2 + 0.9;
       }
