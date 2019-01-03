@@ -1,14 +1,5 @@
 const members = [
-  { avatar: '' },
-  { avatar: '' },
-  { avatar: '' },
-  { avatar: '' },
-  { avatar: '' },
-  { avatar: '' },
-  { avatar: '' },
-  { avatar: '' },
-  { avatar: '' },
-  { avatar: '' },
+  'https://tinypng.com/images/example-shrunk.png',
 ];
 
 export default members;

@@ -1,6 +1,7 @@
 <template>
   <div id="app">
-    <fancy-avatars :size="size" :amount="amount" :type="type" :avatars="avatars" />
+    <fancy-avatars-canvas :size="size" :amount="amount" :type="type" :avatars="avatars" />
+
     <div :class="['controls', showOption ? 'active' : '']">
       <div class="control">
         <span>Type </span>
@@ -15,10 +16,6 @@
         <label for="cylinder">
           <input id="cylinder" type="radio" name="type" value="cylinder" v-model="type"/>
           cylinder
-        </label>
-        <label for="curve">
-          <input id="curve" type="radio" name="type" value="curve" v-model="type"/>
-          curve
         </label>
       </div>
       <div class="control">
@@ -37,22 +34,27 @@
 </template>
 
 <script>
-import fancyAvatars from './components/fancy-avatars.vue';
+import fancyAvatarsCanvas from './components/fancy-avatars-canvas.vue';
 import members from './mock';
 
 export default {
   name: 'app',
   components: {
-    fancyAvatars,
+    fancyAvatarsCanvas,
   },
   data() {
     return {
       type: 'sphere',
-      amount: 300,
+      amount: 10,
       size: 80,
       avatars: members,
       showOption: true,
     };
+  },
+  mounted() {
+    setInterval(() => {
+      this.avatars.push(`https://tinypng.com/images/example-shrunk.png?${Date.now()}`);
+    }, 4000);
   },
 };
 </script>
@@ -61,7 +63,7 @@ export default {
 body {
   padding: 0;
   margin: 0;
-  background-color: #fff;
+  background-color: #2C405A;
 }
 .controls {
   position: fixed;
