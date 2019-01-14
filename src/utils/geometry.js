@@ -16,6 +16,7 @@ class Shape {
     this.timer = 0;
     this.duration = 60;
     this.rotation = { rx: 0, ry: 0 };
+    this.translate = { tx: 0, ty: 0, direction: 1 };
     this.items = this.initItems();
     this.paint = this.paint.bind(this);
     requestAnimationFrame(this.paint);
@@ -80,7 +81,7 @@ class Shape {
   calcItem(item, index) {
     const { type } = this;
     if (type && this[`${type}Calc`]) this[`${type}Calc`](item, index);
-    else this.sphereCalc(item, index);
+    else this.planeCalc(item, index);
   }
 
   planeCalc(item, index) {
@@ -107,6 +108,21 @@ class Shape {
     item.z = Math.sin(theta) * Math.sin(phi);
   }
 
+  helixCalc(item, index) {
+    const { amount } = this;
+    const { width, height } = this.canvas;
+    const { rx, ry } = this.rotation;
+    const { ty, direction } = this.translate;
+    const limit = 30;
+    const gap = 100;
+    const scalar = height * 0.3;
+    const alpha = (index % limit) / limit * 2 * Math.PI - rx;
+    item.x = width / 2 + Math.cos(alpha) * scalar;
+    item.y = height / 2 + index / limit * gap - ry * 10 - ty;
+    item.z = Math.sin(alpha);
+    if ((index === (amount - 1) && item.y < height / 2) || (index === 0 && item.y > height / 2)) this.translate.direction = -direction;
+  }
+
   cubeCalc(item, index) {
     const { width, height } = this.canvas;
     const { rx, ry } = this.rotation;
@@ -125,24 +141,29 @@ class Shape {
 
   switchType(type) {
     this.type = type;
+    this.size = (type === 'text' || type === 'logo') ? 24 : 64;
     this.items.map((item, index) => this.resetItem(item, index));
     this.timer = 0;
     this.duration = 60;
   }
 
   paint() {
-    const { context, timer, duration } = this;
+    const { context, timer, duration, type } = this;
     const { width, height } = this.canvas;
     const { rx, ry } = this.rotation;
     context.clearRect(0, 0, width, height);
     this.items.map((item, index) => {
       if (timer === duration) {
         this.calcItem(item, index);
-        this.rotation.rx = rx > 2 * Math.PI ? 0 : rx + 0.01;
-        this.rotation.ry = ry > 2 * Math.PI ? 0 : ry + 0.01;
       }
       this.paintItem(item);
     });
+    this.rotation.rx = rx > 2 * Math.PI ? 0 : rx + 0.01;
+    this.rotation.ry = ry > 2 * Math.PI ? 0 : ry + 0.01;
+    if (type === 'helix') {
+      this.translate.tx += this.translate.direction * 1;
+      this.translate.ty += this.translate.direction * 1;
+    }
     if (timer !== duration) this.timer += 1;
     requestAnimationFrame(this.paint);
   }

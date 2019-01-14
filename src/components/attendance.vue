@@ -23,10 +23,12 @@ export default {
       type: 'plane',
       currentMode: 'auto',
       modes: ['auto', 'plane', 'sphere', 'helix', 'cube', 'logo', 'text'],
+      timer: null,
     };
   },
   mounted() {
     this.setup();
+    this.switch('auto');
   },
   watch: {
     currentMode: 'switch',
@@ -50,10 +52,22 @@ export default {
       this.shape = new Shape({ canvas, type });
     },
     switch(mode) {
-      // if (mode === 'auto')
-      if (this.type !== mode) this.type = mode;
-      this.shape.switchType(mode);
+      if (mode === 'auto') {
+        this.timer = setTimeout(() => {
+          this.type = this.modes[this.modes.indexOf(this.type) + 1];
+          if (!this.type || this.type === 'auto') this.type = 'plane';
+          this.shape.switchType(this.type);
+          this.switch('auto');
+        }, 10000);
+      } else if (this.type !== mode) {
+        this.type = mode;
+        this.shape.switchType(this.type);
+      }
+      if (mode !== 'auto' && this.timer) clearTimeout(this.timer);
     },
+  },
+  beforeDestroy() {
+    if (this.timer) clearTimeout(this.timer);
   },
 };
 </script>
