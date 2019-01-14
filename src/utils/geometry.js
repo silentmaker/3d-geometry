@@ -1,16 +1,20 @@
 import { rand, tween } from './helpers';
-import defaultImage from '../assets/images/default-avatar.png';
-
-const defaultAvatar = new Image();
-defaultAvatar.src = defaultImage;
+import shiningStar from '../assets/images/default-avatar.png';
+import kmLogo from '../assets/images/default-logo.png';
 
 const createItem = ({ image }) => ({ x: 0, y: 0, z: 0, image });
+const defaultAvatar = new Image();
+defaultAvatar.src = shiningStar;
 
 class Shape {
-  constructor({ canvas, type }) {
+  constructor({ canvas, type, text, logo }) {
+    const defaultLogo = new Image();
+    defaultLogo.src = logo || kmLogo;
     this.canvas = canvas;
     this.context = canvas.getContext('2d');
     this.type = type;
+    this.text = text || '乐享';
+    this.logo = defaultLogo;
     this.amount = 216;
     this.size = 64;
     this.timer = 0;
@@ -53,9 +57,9 @@ class Shape {
       item.beginZ = z;
     }
     if (timer !== duration) {
-      item.x = tween(this.timer, item.beginX, targetX, duration, 'linear');
-      item.y = tween(this.timer, item.beginY, targetY, duration, 'ease-in');
-      item.z = tween(this.timer, item.beginZ, targetZ, duration, 'ease-out');
+      item.x = tween(timer, item.beginX, targetX, duration, 'linear');
+      item.y = tween(timer, item.beginY, targetY, duration, 'linear');
+      item.z = tween(timer, item.beginZ, targetZ, duration, 'linear');
     }
   }
 
@@ -72,7 +76,7 @@ class Shape {
     context.arc(x, y, halfSize, 0, Math.PI * 2, true);
     context.closePath();
     context.clip();
-    context.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    context.fillStyle = 'rgba(0, 0, 0, 0.3)';
     context.fill();
     context.drawImage(image, x - halfSize, y - halfSize, itemSize, itemSize);
     context.restore();
@@ -141,10 +145,48 @@ class Shape {
 
   switchType(type) {
     this.type = type;
-    this.size = (type === 'text' || type === 'logo') ? 24 : 64;
-    this.items.map((item, index) => this.resetItem(item, index));
     this.timer = 0;
-    this.duration = 60;
+    if (type === 'text' || type === 'logo') {
+      this.size = 18;
+      this.duration = 120;
+    } else {
+      this.size = 64;
+      this.items.map((item, index) => this.resetItem(item, index));
+      this.duration = 60;
+    }
+  }
+
+  initPixelItems() {
+    const { type, context, text, logo, size } = this;
+    const { width, height } = this.canvas;
+    if (type === 'text' && !this.textBuffer) {
+      const lineHeight = width / (text.length + 1);
+      context.textAlign = 'center';
+      context.font = `bold ${lineHeight}px arial`;
+      context.fillText(text, width / 2, lineHeight + 100);
+      this.textBuffer = new Uint32Array(context.getImageData(0, 0, width, height).data.buffer);
+      context.clearRect(0, 0, width, height);
+    } else if (type === 'logo' && !this.logoBuffer) {
+      context.drawImage(logo, width / 4, height / 4, width / 2, height / 2);
+      this.logoBuffer = new Uint32Array(context.getImageData(0, 0, width, height).data.buffer);
+      context.clearRect(0, 0, width, height);
+    }
+    const pixelBuffer = this[`${type}Buffer`];
+    this[`${type}Items`] = [];
+    for (let y = 0; y < height; y += size) {
+      for (let x = 0; x < width; x += size) {
+        if (pixelBuffer[y * width + x]) {
+          const item = createItem({ image: defaultAvatar });
+          item.targetX = x;
+          item.targetY = y;
+          item.targetZ = 1;
+          item.x = rand(0, width);
+          item.y = rand(0, height);
+          item.z = 1;
+          this[`${type}Items`].push(item);
+        }
+      }
+    }
   }
 
   paint() {
@@ -152,12 +194,18 @@ class Shape {
     const { width, height } = this.canvas;
     const { rx, ry } = this.rotation;
     context.clearRect(0, 0, width, height);
-    this.items.map((item, index) => {
-      if (timer === duration) {
-        this.calcItem(item, index);
-      }
-      this.paintItem(item);
-    });
+    if (type === 'text' || type === 'logo') {
+      if (!this[`${type}Items`]) this.initPixelItems();
+      this[`${type}Items`].map(item => this.paintItem(item));
+    } else {
+      this.items.map((item, index) => {
+        if (timer === duration) {
+          this.calcItem(item, index);
+        }
+        this.paintItem(item);
+      });
+    }
+    // update timer & rotation & translate
     this.rotation.rx = rx > 2 * Math.PI ? 0 : rx + 0.01;
     this.rotation.ry = ry > 2 * Math.PI ? 0 : ry + 0.01;
     if (type === 'helix') {
