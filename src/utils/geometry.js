@@ -50,13 +50,13 @@ class Shape {
 
   updateItem(item) {
     const { x, y, z, targetX, targetY, targetZ } = item;
-    const { timer, duration } = this;
+    const { timer, duration, type } = this;
     if (timer === 0) {
       item.beginX = x;
       item.beginY = y;
       item.beginZ = z;
     }
-    if (timer !== 2 * duration) {
+    if (timer !== duration || type === 'text' || type === 'logo') {
       item.x = tween(timer, item.beginX, targetX, duration, 'linear');
       item.y = tween(timer, item.beginY, targetY, duration, 'linear');
       item.z = tween(timer, item.beginZ, targetZ, duration, 'linear');
