@@ -1,64 +1,20 @@
 import { rand, tween } from './helpers';
+import defaultImage from '../assets/images/default-avatar.png';
 
-class Avatar {
-  constructor({ context }) {
-    this.image = null;
-    this.context = context;
-    this.timer = 0;
-    this.duration = 0;
-    this.x = 0;
-    this.y = 0;
-    this.z = 0;
-    this.size = 64;
-  }
+const defaultAvatar = new Image();
+defaultAvatar.src = defaultImage;
 
-  calc() {
-    const { x, y, z, targetX, targetY, targetZ, timer, duration } = this;
-    if (timer === 0) {
-      this.beginX = x;
-      this.beginY = y;
-      this.beginZ = z;
-    }
-    if (timer !== duration) {
-      // transition animation
-      this.x = tween(this.timer, this.beginX, targetX, duration, 'linear');
-      this.y = tween(this.timer, this.beginY, targetY, duration, 'linear');
-      this.z = tween(this.timer, this.beginZ, targetZ, duration, 'linear');
-      this.timer += 1;
-    }
-  }
-
-  paint() {
-    this.calc();
-    const { x, y, z, image, size, context } = this;
-    context.save();
-    context.globalAlpha = z / 2 + 0.5;
-    context.beginPath();
-    context.arc(x, y, size / 2, 0, Math.PI * 2, true);
-    context.closePath();
-    context.clip();
-    context.fillStyle = 'rgba(0, 0, 0, 0.4)';
-    context.fill();
-    if (image) {
-      context.drawImage(image, x - size / 2, y - size / 2, size, size);
-    } else {
-      context.beginPath();
-      context.arc(x, y, 2, 0, Math.PI * 2, true);
-      context.fillStyle = '#ffffff';
-      context.fill();
-      context.closePath();
-    }
-    context.restore();
-  }
-}
+const createItem = ({ image }) => ({ x: 0, y: 0, z: 0, image });
 
 class Shape {
   constructor({ canvas, type }) {
+    this.canvas = canvas;
     this.context = canvas.getContext('2d');
-    this.width = canvas.width;
-    this.height = canvas.height;
     this.type = type;
-    this.amount = 125;
+    this.amount = 216;
+    this.size = 64;
+    this.timer = 0;
+    this.duration = 60;
     this.rotation = { rx: 0, ry: 0 };
     this.items = this.initItems();
     this.paint = this.paint.bind(this);
@@ -67,62 +23,127 @@ class Shape {
 
   initItems() {
     const items = [];
-    const { context, width, height } = this;
     for (let i = 0; i < this.amount; i++) {
-      const item = new Avatar({ context });
-      item.x = rand(0, width);
-      item.y = rand(0, height);
-      item.z = 1;
-      this.resetItem(item, i);
+      const item = createItem({ image: defaultAvatar });
+      this.resetItem(item, i, true);
       items.push(item);
     }
     return items;
   }
 
-  resetItem(item, i) {
-    const position = this.calcItem(i);
-    item.targetX = position.x;
-    item.targetY = position.y;
-    item.targetZ = position.z;
-    item.duration = 60;
-    item.timer = 0;
+  resetItem(item, i, random = false) {
+    const { width, height } = this.canvas;
+    const { x, y, z } = item;
+    this.calcItem(item, i);
+    item.targetX = item.x;
+    item.targetY = item.y;
+    item.targetZ = item.z;
+    item.x = random ? rand(0, width) : x;
+    item.y = random ? rand(0, height) : y;
+    item.z = random ? 1 : z;
   }
 
-  calcItem(i, stable = false) {
+  updateItem(item) {
+    const { x, y, z, targetX, targetY, targetZ } = item;
+    const { timer, duration } = this;
+    if (timer === 0) {
+      item.beginX = x;
+      item.beginY = y;
+      item.beginZ = z;
+    }
+    if (timer !== duration) {
+      item.x = tween(this.timer, item.beginX, targetX, duration, 'linear');
+      item.y = tween(this.timer, item.beginY, targetY, duration, 'ease-in');
+      item.z = tween(this.timer, item.beginZ, targetZ, duration, 'ease-out');
+    }
+  }
+
+  paintItem(item) {
+    this.updateItem(item);
+    const { x, y, z, image } = item;
+    const { size, context } = this;
+    const itemSize = size * (1 + Math.sin(Date.now() / 300 + x * 0.01) * 0.2);
+    const halfSize = itemSize / 2;
+
+    context.save();
+    context.globalAlpha = z / 4 + 0.75;
+    context.beginPath();
+    context.arc(x, y, halfSize, 0, Math.PI * 2, true);
+    context.closePath();
+    context.clip();
+    context.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    context.fill();
+    context.drawImage(image, x - halfSize, y - halfSize, itemSize, itemSize);
+    context.restore();
+  }
+
+  calcItem(item, index) {
     const { type } = this;
-    if (type && this[type]) return this[type](i, stable);
-    return this.sphere(i, stable);
+    if (type && this[`${type}Calc`]) this[`${type}Calc`](item, index);
+    else this.sphereCalc(item, index);
   }
 
-  sphere(i, stable = false) {
-    const { width, height, rotation } = this;
-    const { rx } = rotation;
-    const scalar = height * 0.32;
-    const phi = Math.acos(-1 + (2 * i) / this.amount);
-    const theta = Math.sqrt(this.amount * Math.PI) * phi + (stable ? rx : 0);
+  planeCalc(item, index) {
+    const { width, height } = this.canvas;
+    const unit = 72;
+    const tempX = Math.floor(index % 24) - 11.5;
+    const tempY = Math.floor(index / 24) - 4;
 
-    return {
-      x: width / 2 + Math.cos(theta) * Math.sin(phi) * scalar,
-      y: height / 2 + Math.cos(phi) * scalar,
-      z: Math.sin(theta) * Math.sin(phi),
-    };
+    item.x = width / 2 + tempX * unit;
+    item.y = height / 2 + tempY * unit;
+    item.z = 1;
+  }
+
+  sphereCalc(item, index) {
+    const { width, height } = this.canvas;
+    const { rx, ry } = this.rotation;
+    const scalar = height * 0.34;
+    const phi = Math.acos(-1 + (2 * index) / this.amount);
+    const theta = Math.sqrt(this.amount * Math.PI) * phi + rx;
+    const tempX = Math.cos(theta) * Math.sin(phi) * scalar;
+    const tempY = Math.cos(phi) * scalar;
+    item.x = width / 2 + (tempX * Math.sin(ry) + tempY * Math.cos(ry));
+    item.y = height / 2 + (tempX * Math.cos(ry) - tempY * Math.sin(ry));
+    item.z = Math.sin(theta) * Math.sin(phi);
+  }
+
+  cubeCalc(item, index) {
+    const { width, height } = this.canvas;
+    const { rx, ry } = this.rotation;
+    const unit = 84;
+    const tempX = (index % 36 % 6) - 2.5;
+    const tempY = Math.floor((index % 36) / 6) - 2.5;
+    const tempZ = Math.floor(index / 36) - 2.5;
+    const transX = tempX * Math.sin(ry) + tempZ * Math.cos(ry);
+    let transZ = tempX * Math.cos(ry) - tempZ * Math.sin(ry);
+    const transY = tempY * Math.sin(rx) + transZ * Math.cos(rx);
+    transZ = tempY * Math.cos(rx) - transZ * Math.sin(rx);
+    item.x = width / 2 + transX * unit;
+    item.y = height / 2 + transY * unit;
+    item.z = transZ / 2.5;
+  }
+
+  switchType(type) {
+    this.type = type;
+    this.items.map((item, index) => this.resetItem(item, index));
+    this.timer = 0;
+    this.duration = 60;
   }
 
   paint() {
-    const { context, width, height, rotation } = this;
-    const { rx, ry } = rotation;
+    const { context, timer, duration } = this;
+    const { width, height } = this.canvas;
+    const { rx, ry } = this.rotation;
     context.clearRect(0, 0, width, height);
-    this.rotation.rx = rx > 2 * Math.PI ? 0 : rx + 0.005;
-    this.rotation.ry = ry > 2 * Math.PI ? 0 : ry + 0.005;
     this.items.map((item, index) => {
-      if (item.timer === item.duration) {
-        const position = this.calcItem(index, true);
-        item.x = position.x;
-        item.y = position.y;
-        item.z = position.z;
+      if (timer === duration) {
+        this.calcItem(item, index);
+        this.rotation.rx = rx > 2 * Math.PI ? 0 : rx + 0.01;
+        this.rotation.ry = ry > 2 * Math.PI ? 0 : ry + 0.01;
       }
-      item.paint();
+      this.paintItem(item);
     });
+    if (timer !== duration) this.timer += 1;
     requestAnimationFrame(this.paint);
   }
 
@@ -131,7 +152,4 @@ class Shape {
   }
 }
 
-export {
-  Avatar,
-  Shape,
-};
+export default Shape;
