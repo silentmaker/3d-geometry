@@ -15,6 +15,9 @@ module.exports = {
     'no-param-reassign': 'off',
     'one-var-declaration-per-line': 'off',
     'one-var': 'off',
+    'no-plusplus': 'off',
+    'object-curly-newline': 'off',
+    'array-callback-return': 'off',
   },
   parserOptions: {
     parser: 'babel-eslint',

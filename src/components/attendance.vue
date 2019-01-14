@@ -1,10 +1,8 @@
 <template>
   <div id="canvas-container" ref="container">
     <ul class="controls">
-      <li>plane</li>
-      <li>sphere</li>
-      <li>helix</li>
-      <li>cube</li>
+      <li :class="{ active: type === currentType }"
+        v-for="type in types" :key="type">{{ type.toUpperCase() }}</li>
     </ul>
   </div>
 </template>
@@ -18,35 +16,35 @@ export default {
     avatars: Array,
     amount: Number,
   },
+  data() {
+    return {
+      types: ['plane', 'sphere', 'helix', 'cube'],
+      currentType: 'sphere',
+    };
+  },
   mounted() {
     this.setup();
   },
   methods: {
     setup() {
       this.canvas = document.createElement('canvas');
-      this.context = this.canvas.getContext('2d');
       this.resize();
-      this.animate();
+      this.animate(this.currentType);
       this.$refs.container.appendChild(this.canvas);
-      // this.canvas = document.createElement('canvas');
-      // this.context = this.canvas.getContext('2d');
-      // this.$refs.container.appendChild(this.canvas);
-      // window.addEventListener('resize', this.resize);
-      // this.resize();
-      // this.init();
+      window.addEventListener('resize', this.resize);
     },
     resize() {
-      this.width = window.innerWidth;
-      this.height = window.innerHeight;
-      this.canvas.width = this.width;
-      this.canvas.height = this.height;
-      // this.canvas.width = window.innerWidth;
-      // this.canvas.height = window.innerHeight;
+      this.canvas.width = this.$refs.container.clientWidth;
+      this.canvas.height = this.$refs.container.clientHeight;
     },
-    switch() {
-      const { context } = this;
+    animate(type) {
+      const { canvas } = this;
+      this.shape = new Shape({ canvas, type });
+      // this.shape.setItems(this.items);
+    },
+    switch(type) {
       if (this.shape && this.shape.destroy) this.shape.destroy();
-      this.shape = new Shape({ context });
+      this.animate(type);
     },
   },
 };
@@ -59,5 +57,31 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
+  transform: translateZ(0);
+
+  .controls {
+    position: absolute;
+    top: 20px;
+    left: 40px;
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+
+    li {
+      display: block;
+      margin-bottom: 4px;
+      padding: 4px 8px;
+      border: solid 1px #fff;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+
+      &.active {
+        color: #2C405A;
+        background-color: #fff;
+      }
+    }
+  }
 }
 </style>

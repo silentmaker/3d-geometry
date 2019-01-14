@@ -1,5 +1,5 @@
 <template>
-  <attendance :avatars="avatars" :type="type" :amount="amount" />
+  <attendance :avatars="avatars" :amount="amount" />
 </template>
 
 <script>
@@ -23,7 +23,7 @@ export default {
     };
   },
   mounted() {
-    this.simulate();
+    // this.simulate();
   },
   methods: {
     simulate() {
