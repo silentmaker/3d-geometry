@@ -56,7 +56,7 @@ class Shape {
       item.beginY = y;
       item.beginZ = z;
     }
-    if (timer !== duration) {
+    if (timer !== 2 * duration) {
       item.x = tween(timer, item.beginX, targetX, duration, 'linear');
       item.y = tween(timer, item.beginY, targetY, duration, 'linear');
       item.z = tween(timer, item.beginZ, targetZ, duration, 'linear');
@@ -147,7 +147,7 @@ class Shape {
     this.type = type;
     this.timer = 0;
     if (type === 'text' || type === 'logo') {
-      this.size = 18;
+      this.size = 24;
       this.duration = 120;
     } else {
       this.size = 64;
