@@ -32,6 +32,7 @@ export default {
   },
   watch: {
     currentMode: 'switch',
+    avatars: 'attend',
   },
   methods: {
     setup() {
@@ -48,8 +49,8 @@ export default {
       }
     },
     animate() {
-      const { canvas, type } = this;
-      this.shape = new Shape({ canvas, type });
+      const { canvas, type, amount } = this;
+      this.shape = new Shape({ canvas, type, amount });
     },
     switch(mode) {
       if (mode === 'auto') {
@@ -64,6 +65,15 @@ export default {
         this.shape.switchType(this.type);
       }
       if (mode !== 'auto' && this.timer) clearTimeout(this.timer);
+    },
+    attend(newAvatars, oldAvatars) {
+      if (newAvatars.length > 500) return;
+      const added = newAvatars.filter(item => oldAvatars.indexOf(item) === -1);
+      added.map((item) => {
+        const image = new Image();
+        image.onload = () => this.shape.popup.images.push(image);
+        image.src = item;
+      });
     },
   },
   beforeDestroy() {

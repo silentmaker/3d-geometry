@@ -14,7 +14,7 @@ export default {
   data() {
     return {
       avatars: [],
-      amount: 100,
+      amount: 216,
       options: {
         amount: 200,
       },
@@ -23,21 +23,21 @@ export default {
     };
   },
   mounted() {
-    // this.simulate();
+    this.simulate();
   },
   methods: {
     simulate() {
       this.timer = setTimeout(() => {
-        let count = this.rand(2, 5);
+        let count = this.rand(2, 3);
         const newAttends = [];
         console.log(`simulating ${count} attendances at total ${this.avatars.length}`);
         while (count > 0) {
-          newAttends.push('http://i.pravatar.cc/100');
+          newAttends.push(`http://i.pravatar.cc/100?=${Math.random()}`);
           count -= 1;
         }
         this.avatars = this.avatars.concat(newAttends);
         if (this.avatars.length < this.amount) this.simulate();
-      }, this.rand(5, 8) * 1000);
+      }, 10000);
     },
   },
   beforeDestroy() {
