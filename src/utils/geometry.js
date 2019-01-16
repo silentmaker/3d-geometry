@@ -179,7 +179,10 @@ class Shape {
       tempContext.fillText(text, width / 2, height / 2);
       this.textBuffer = new Uint32Array(tempContext.getImageData(0, 0, width, height).data.buffer);
     } else if (type === 'logo' && !this.logoBuffer) {
-      tempContext.drawImage(logo, width / 4, height / 4, width / 2, height / 2);
+      const ratio = logo.width / logo.height;
+      const logoWidth = height * 0.6;
+      const logoHeight = logoWidth * ratio;
+      tempContext.drawImage(logo, width / 2 - logoHeight / 2, height / 2 - logoHeight / 2, logoWidth, logoHeight);
       this.logoBuffer = new Uint32Array(tempContext.getImageData(0, 0, width, height).data.buffer);
     }
   }
