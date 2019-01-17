@@ -2,10 +2,18 @@
   <div id="canvas-container" ref="container">
     <video class="bg-video" loop autoplay muted src="https://img2.51vj.cn/wall_activity/fs08.mp4"></video>
 
-    <ul class="controls">
-      <li :class="{ active: mode === currentMode }" @click="currentMode = mode"
-        v-for="mode in modes" :key="mode">{{ mode.toUpperCase() }}</li>
+    <ul :class="['option-list', showOptions ? '' : 'hide']">
+      <li @click="switchType(index)"
+        v-for="(mode, index) in modes" :key="mode.type">
+        <span :class="['option-icon', mode.type]"></span>
+        <span>{{ mode.name }}</span>
+      </li>
     </ul>
+
+    <div :class="['current-option', showControl ? '' : 'hide']" @click="showOptions = !showOptions">
+      <span :class="['option-icon', modes[current].type]"></span>
+      <span>{{ modes[current].name }}</span>
+    </div>
   </div>
 </template>
 
@@ -21,22 +29,29 @@ export default {
   data() {
     return {
       type: 'plane',
-      currentMode: 'auto',
-      modes: ['auto', 'plane', 'sphere', 'helix', 'cube', 'logo', 'text'],
+      current: 0,
+      modes: [
+        { type: 'auto', name: '自动' },
+        { type: 'plane', name: '矩阵' },
+        { type: 'sphere', name: '地球' },
+        { type: 'helix', name: '圆柱' },
+        { type: 'cube', name: '立方体' },
+        { type: 'logo', name: 'LOGO' },
+        { type: 'text', name: '文字' },
+      ],
       timer: null,
       showControl: true,
-      showOptions: true,
+      showOptions: false,
     };
   },
   mounted() {
     this.setup();
-    this.switch('auto');
+    this.switchType(0);
     // this.$bus.$on('toggleControl', () => {
     //   this.showControl = !this.showControl;
     // });
   },
   watch: {
-    currentMode: 'switch',
     avatars: 'attend',
   },
   methods: {
@@ -57,19 +72,20 @@ export default {
       const { canvas, type, amount } = this;
       this.shape = new Shape({ canvas, type, amount });
     },
-    switch(mode) {
-      if (mode === 'auto') {
+    switchType(current) {
+      this.current = current;
+      this.showOptions = false;
+      if (current === 0) {
         this.timer = setTimeout(() => {
-          this.type = this.modes[this.modes.indexOf(this.type) + 1];
-          if (!this.type || this.type === 'auto') this.type = 'plane';
+          this.type = this.modes[current + 1] ? this.modes[current + 1].type : 'plane';
           this.shape.switchType(this.type);
-          this.switch('auto');
+          this.switchType(0);
         }, 10000);
-      } else if (this.type !== mode) {
-        this.type = mode;
+      } else if (this.modes[current] && this.modes[current].type !== this.type) {
+        this.type = this.modes[current].type;
         this.shape.switchType(this.type);
       }
-      if (mode !== 'auto' && this.timer) clearTimeout(this.timer);
+      if (current !== 0 && this.timer) clearTimeout(this.timer);
     },
     attend(newAvatars, oldAvatars) {
       if (newAvatars.length > 500) return;
@@ -101,32 +117,65 @@ export default {
   bottom: 0;
   transform: translateZ(0);
 
-  .controls {
-    display: flex;
+  .option-list {
     position: absolute;
-    bottom: 40px;
-    left: 40px;
+    bottom: 184px;
+    right: 130px;
+    width: 150px;
     margin: 0;
     padding: 0;
+    background-color: rgba(0, 0, 0, .6);
+    border-radius: 8px;
     list-style: none;
     z-index: 1;
+    overflow: hidden;
+    transition: opacity .5s;
 
+    &.hide { opacity: 0; }
     li {
       display: block;
-      margin-right: 8px;
-      padding: 4px 8px;
-      border: solid 1px #fff;
-      border-radius: 8px;
+      padding: 10px 0;
       color: #fff;
-      font-size: 10px;
+      font-size: 16px;
+      text-indent: 36px;
       cursor: pointer;
-      transition: color,background-color .5s;
+      font-family: 'Microsoft YaHei';
+      transition: background-color .5s;
 
-      &.active {
-        color: #2C405A;
-        background-color: #fff;
-      }
+      &:hover { background-color: rgba(255, 255, 255, .2); }
     }
+  }
+  .current-option {
+    position: absolute;
+    bottom: 122px;
+    right: 130px;
+    width: 150px;
+    padding: 10px 0;
+    background-color: rgba(0, 0, 0, .6);
+    border-radius: 30px;
+    text-indent: 36px;
+    font-size: 16px;
+    color: #fff;
+    font-family: 'Microsoft YaHei';
+    cursor: pointer;
+    z-index: 1;
+    transition: opacity .5s;
+
+    &.hide { opacity: 0; }
+  }
+  .option-icon {
+    display: inline-block;
+    vertical-align: middle;
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    background-image: url(../assets/images/sprites-screen-option.png);
+    &.plane { background-position: -47px 0; }
+    &.sphere { background-position: -95px 0; }
+    &.helix { background-position: -142px 0; }
+    &.cube { background-position: -142px 0; }
+    &.logo { background-position: -184px 0; }
+    &.text { background-position: -230px 0; }
   }
 
   video.bg-video {

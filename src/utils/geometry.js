@@ -1,6 +1,6 @@
 import { rand, tween } from './helpers';
-import defaultAvatar from '../assets/images/icon_star.png';
-import defaultLogo from '../assets/images/default-logo.png';
+import defaultAvatar from '../assets/images/default-screen-avatar.png';
+import defaultLogo from '../assets/images/default-screen-logo.png';
 
 const createItem = () => ({ x: 0, y: 0, z: 0, image: null });
 
