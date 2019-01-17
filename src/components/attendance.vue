@@ -11,8 +11,8 @@
     </ul>
 
     <div :class="['current-option', showControl ? '' : 'hide']" @click="showOptions = !showOptions">
-      <span :class="['option-icon', modes[current].type]"></span>
-      <span>{{ modes[current].name }}</span>
+      <span :class="['option-icon', modes[modeIndex].type]"></span>
+      <span>{{ modes[modeIndex].name }}</span>
     </div>
   </div>
 </template>
@@ -25,11 +25,13 @@ export default {
   props: {
     avatars: Array,
     amount: Number,
+    text: String,
+    logo: String,
   },
   data() {
     return {
-      type: 'plane',
-      current: 0,
+      typeIndex: 1,
+      modeIndex: 0,
       modes: [
         { type: 'auto', name: '自动' },
         { type: 'plane', name: '矩阵' },
@@ -69,23 +71,25 @@ export default {
       }
     },
     animate() {
-      const { canvas, type, amount } = this;
-      this.shape = new Shape({ canvas, type, amount });
+      const { canvas, modes, typeIndex, amount, text, logo } = this;
+      const { type } = modes[typeIndex];
+      this.shape = new Shape({ canvas, type, amount, text, logo });
     },
-    switchType(current) {
-      this.current = current;
+    switchType(modeIndex) {
+      this.modeIndex = modeIndex;
       this.showOptions = false;
-      if (current === 0) {
+      if (modeIndex === 0) {
         this.timer = setTimeout(() => {
-          this.type = this.modes[current + 1] ? this.modes[current + 1].type : 'plane';
-          this.shape.switchType(this.type);
+          this.typeIndex += 1;
+          if (this.typeIndex > this.modes.length - 1) this.typeIndex = 1;
+          this.shape.switchType(this.modes[this.typeIndex].type);
           this.switchType(0);
         }, 10000);
-      } else if (this.modes[current] && this.modes[current].type !== this.type) {
-        this.type = this.modes[current].type;
-        this.shape.switchType(this.type);
+      } else if (modeIndex !== this.typeIndex) {
+        this.typeIndex = modeIndex;
+        this.shape.switchType(this.modes[this.typeIndex].type);
       }
-      if (current !== 0 && this.timer) clearTimeout(this.timer);
+      if (modeIndex !== 0 && this.timer) clearTimeout(this.timer);
     },
     attend(newAvatars, oldAvatars) {
       if (newAvatars.length > 500) return;
