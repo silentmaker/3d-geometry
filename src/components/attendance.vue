@@ -24,11 +24,16 @@ export default {
       currentMode: 'auto',
       modes: ['auto', 'plane', 'sphere', 'helix', 'cube', 'logo', 'text'],
       timer: null,
+      showControl: true,
+      showOptions: true,
     };
   },
   mounted() {
     this.setup();
     this.switch('auto');
+    // this.$bus.$on('toggleControl', () => {
+    //   this.showControl = !this.showControl;
+    // });
   },
   watch: {
     currentMode: 'switch',
@@ -68,10 +73,15 @@ export default {
     },
     attend(newAvatars, oldAvatars) {
       if (newAvatars.length > 500) return;
-      const added = newAvatars.filter(item => oldAvatars.indexOf(item) === -1);
-      added.map((item) => {
+      const isInit = oldAvatars.length === 0;
+      const newAttends = isInit ? newAvatars : newAvatars.filter(item => oldAvatars.indexOf(item) === -1);
+      newAttends.map((item) => {
         const image = new Image();
-        image.onload = () => this.shape.popup.images.push(image);
+        image.onload = () => {
+          // Previous attended avatars show immediately
+          if (isInit) this.shape.randUpdate(this.shape.items, image);
+          else this.shape.addPopup(image);
+        };
         image.src = item;
       });
     },

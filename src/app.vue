@@ -28,11 +28,11 @@ export default {
   methods: {
     simulate() {
       this.timer = setTimeout(() => {
-        let count = this.rand(2, 3);
+        let count = this.avatars.length ? this.rand(2, 3) : rand(10, 20);
         const newAttends = [];
         console.log(`simulating ${count} attendances at total ${this.avatars.length}`);
         while (count > 0) {
-          newAttends.push(`http://i.pravatar.cc/100?=${Math.random()}`);
+          newAttends.push(`http://i.pravatar.cc/200?=${Math.random()}`);
           count -= 1;
         }
         this.avatars = this.avatars.concat(newAttends);

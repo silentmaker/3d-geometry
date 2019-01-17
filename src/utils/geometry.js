@@ -1,28 +1,46 @@
 import { rand, tween } from './helpers';
-import shiningStar from '../assets/images/default-avatar.png';
-import kmLogo from '../assets/images/default-logo.png';
+import defaultAvatar from '../assets/images/icon_star.png';
+import defaultLogo from '../assets/images/default-logo.png';
 
 const createItem = () => ({ x: 0, y: 0, z: 0, image: null });
-const defaultAvatar = new Image();
-defaultAvatar.src = shiningStar;
+
+const randUpdate = (items, image) => {
+  let index = rand(0, items.length - 1);
+  while (items[index].image) {
+    if (index >= items.length - 1) index = 0;
+    index += 1;
+  }
+  items[index].image = image;
+};
+
+const defaultImage = new Image();
+defaultImage.src = defaultAvatar;
 
 class Shape {
   constructor({ canvas, type, amount, text, logo }) {
-    const defaultLogo = new Image();
-    defaultLogo.src = logo || kmLogo;
+    const logoImage = new Image();
+    logoImage.onload = () => this.initPixelItems('logo');
+    logoImage.src = logo || defaultLogo;
     this.canvas = canvas;
     this.context = canvas.getContext('2d');
     this.type = type;
     this.amount = amount;
     this.text = text || '乐享';
-    this.logo = defaultLogo;
+    this.logo = logoImage;
     this.size = 64;
     this.timer = 0;
     this.duration = 60;
     this.rotation = { rx: 0, ry: 0 };
     this.translate = { tx: 0, ty: 0, direction: 1 };
     this.popup = { images: [], timer: 0, duration: 120, count: 0 };
-    this.items = this.initItems();
+    this.items = [];
+    this.logoBuffer = [];
+    this.textBuffer = [];
+    this.logoItems = [];
+    this.textItems = [];
+    this.randUpdate = randUpdate;
+    this.createItem = createItem;
+    this.initItems();
     this.paint = this.paint.bind(this);
     requestAnimationFrame(this.paint);
   }
@@ -30,11 +48,49 @@ class Shape {
   initItems() {
     const items = [];
     for (let i = 0; i < this.amount; i++) {
-      const item = createItem();
+      const item = this.createItem();
       this.resetItem(item, i, true);
       items.push(item);
     }
-    return items;
+    this.items = items;
+    this.initPixelItems('text');
+  }
+
+  initPixelItems(type) {
+    const { items } = this;
+    this.initPixelBuffer(type);
+    this[`${type}Buffer`].map((pixel, index) => {
+      const item = items[index] || this.createItem();
+      this[`${type}Items`].push(item);
+    });
+  }
+
+  initPixelBuffer(type) {
+    const { text, logo } = this;
+    const { width, height } = this.canvas;
+    const tempCanvas = document.createElement('canvas');
+    const tempContext = tempCanvas.getContext('2d');
+    const size = 24;
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    if (type === 'text') {
+      const fontSize = width / (text.length + 1);
+      tempContext.textAlign = 'center';
+      tempContext.textBaseline = 'middle';
+      tempContext.font = `bold ${fontSize}px arial`;
+      tempContext.fillText(text, width / 2, height / 2);
+    } else if (type === 'logo') {
+      const ratio = logo.width / logo.height;
+      const logoWidth = height * 0.6;
+      const logoHeight = logoWidth * ratio;
+      tempContext.drawImage(logo, width / 2 - logoHeight / 2, height / 2 - logoHeight / 2, logoWidth, logoHeight);
+    }
+    const pixelData = new Uint32Array(tempContext.getImageData(0, 0, width, height).data.buffer);
+    for (let y = 0; y < height; y += size) {
+      for (let x = 0; x < width; x += size) {
+        if (pixelData[y * width + x]) this[`${type}Buffer`].push({ x, y, z: 1 });
+      }
+    }
   }
 
   resetItem(item, i, random = false) {
@@ -49,7 +105,7 @@ class Shape {
     item.z = random ? 1 : z;
   }
 
-  updateItem(item) {
+  tweenItem(item) {
     const { x, y, z, targetX, targetY, targetZ } = item;
     const { timer, duration, type } = this;
     if (timer === 0) {
@@ -58,24 +114,18 @@ class Shape {
       item.beginZ = z;
     }
     if (timer !== duration || type === 'text' || type === 'logo') {
-      item.x = tween(timer, item.beginX, targetX, duration, 'linear');
-      item.y = tween(timer, item.beginY, targetY, duration, 'linear');
-      item.z = tween(timer, item.beginZ, targetZ, duration, 'linear');
+      item.x = tween(timer, item.beginX, targetX, duration, 'ease-in');
+      item.y = tween(timer, item.beginY, targetY, duration, 'ease-in');
+      item.z = tween(timer, item.beginZ, targetZ, duration, 'ease-in');
     }
   }
 
-  paintItem(item, mirrorIndex) {
-    this.updateItem(item);
+  paintItem(item) {
+    this.tweenItem(item);
     const { x, y, z, image } = item;
     const { size, context } = this;
     const itemSize = size * (1 + Math.sin(Date.now() / 300 + x * 0.01) * 0.2);
     const halfSize = itemSize / 2;
-    const realImage = image || (
-      mirrorIndex !== undefined && this.items[mirrorIndex]
-        ? (this.items[mirrorIndex].image || defaultAvatar)
-        : defaultAvatar
-    );
-
     context.save();
     context.globalAlpha = z / 4 + 0.75;
     context.beginPath();
@@ -84,13 +134,19 @@ class Shape {
     context.clip();
     context.fillStyle = 'rgba(0, 0, 0, 0.3)';
     context.fill();
-    context.drawImage(realImage, x - halfSize, y - halfSize, itemSize, itemSize);
+    context.drawImage(image || defaultImage, x - halfSize, y - halfSize, itemSize, itemSize);
     context.restore();
   }
 
   calcItem(item, index) {
     const { type } = this;
-    if (type && this[`${type}Calc`]) this[`${type}Calc`](item, index);
+    if (type === 'logo' || type === 'text') {
+      item.x = this[`${type}Buffer`][index].x;
+      item.y = this[`${type}Buffer`][index].y;
+      item.z = this[`${type}Buffer`][index].z;
+    } else if (type && this[`${type}Calc`]) {
+      this[`${type}Calc`](item, index);
+    }
   }
 
   planeCalc(item, index) {
@@ -156,7 +212,7 @@ class Shape {
     this.timer = 0;
     if (type === 'text' || type === 'logo') {
       this.size = 24;
-      if (this[`${type}Items`]) this[`${type}Items`].map((item, index) => this.resetItem(item, index, true));
+      this[`${type}Items`].map((item, index) => this.resetItem(item, index, true));
     } else {
       this.size = 64;
       this.items.map((item, index) => this.resetItem(item, index));
@@ -164,69 +220,21 @@ class Shape {
     this.duration = 60;
   }
 
-  initPixelBuffer() {
-    const { type, text, logo } = this;
-    const { width, height } = this.canvas;
-    const tempCanvas = document.createElement('canvas');
-    const tempContext = tempCanvas.getContext('2d');
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-    if (type === 'text' && !this.textBuffer) {
-      const lineHeight = width / (text.length + 1);
-      tempContext.textAlign = 'center';
-      tempContext.textBaseline = 'middle';
-      tempContext.font = `bold ${lineHeight}px arial`;
-      tempContext.fillText(text, width / 2, height / 2);
-      this.textBuffer = new Uint32Array(tempContext.getImageData(0, 0, width, height).data.buffer);
-    } else if (type === 'logo' && !this.logoBuffer) {
-      const ratio = logo.width / logo.height;
-      const logoWidth = height * 0.6;
-      const logoHeight = logoWidth * ratio;
-      tempContext.drawImage(logo, width / 2 - logoHeight / 2, height / 2 - logoHeight / 2, logoWidth, logoHeight);
-      this.logoBuffer = new Uint32Array(tempContext.getImageData(0, 0, width, height).data.buffer);
-    }
-  }
-
-  initPixelItems() {
-    const { type, size } = this;
-    const { width, height } = this.canvas;
-    if (!this[`${type}Buffer`]) this.initPixelBuffer();
-    const pixelBuffer = this[`${type}Buffer`];
-    this[`${type}Items`] = [];
-    for (let y = 0; y < height; y += size) {
-      for (let x = 0; x < width; x += size) {
-        if (pixelBuffer[y * width + x]) {
-          const item = createItem();
-          item.targetX = x;
-          item.targetY = y;
-          item.targetZ = 1;
-          item.x = rand(0, width);
-          item.y = rand(0, height);
-          item.z = 1;
-          this[`${type}Items`].push(item);
-        }
-      }
-    }
+  addPopup(image) {
+    this.popup.images.push(image);
   }
 
   popupItem() {
-    const { type, context, amount } = this;
+    const { type, context } = this;
     const { width, height } = this.canvas;
     const { images, timer, duration, count } = this.popup;
-    const limit = (type === 'text' || type === 'logo') ? this[`${type}Items`].length : amount;
-    if (count > limit) return;
+    const items = (type === 'text' || type === 'logo') ? this[`${type}Items`] : this.items;
+    if (count > items.length) return;
     const size = tween(timer, 0, 300, duration / 2, 'ease-out');
     context.drawImage(images[0], (width - size) / 2, (height - size) / 2, size, size);
     this.popup.timer += 1;
     if (this.popup.timer === duration) {
-      const avatarImage = this.popup.images.shift();
-      const items = (type === 'text' || type === 'logo') ? this[`${type}Items`] : this.items;
-      let index = rand(0, limit - 1);
-      while (items[index].image) {
-        if (index >= amount - 1) index = 0;
-        index += 1;
-      }
-      items[index].image = avatarImage;
+      this.randUpdate(items, this.popup.images.shift());
       this.popup.timer = 0;
       this.popup.count += 1;
     }
@@ -239,8 +247,7 @@ class Shape {
     const { rx, ry } = this.rotation;
     context.clearRect(0, 0, width, height);
     if (type === 'text' || type === 'logo') {
-      if (!this[`${type}Items`]) this.initPixelItems();
-      this[`${type}Items`].map((item, index) => this.paintItem(item, index));
+      this[`${type}Items`].map(item => this.paintItem(item));
     } else {
       this.items.map((item, index) => {
         if (timer === duration) this.calcItem(item, index);
