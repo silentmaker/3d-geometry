@@ -32,7 +32,7 @@ class Shape {
     this.duration = 60;
     this.rotation = { rx: 0, ry: 0 };
     this.translate = { tx: 0, ty: 0, direction: 1 };
-    this.popup = { images: [], timer: 0, duration: 120, count: 0 };
+    this.popup = { images: [], titles: [], timer: 0, duration: 120, count: 0 };
     this.items = [];
     this.logoBuffer = [];
     this.textBuffer = [];
@@ -220,21 +220,40 @@ class Shape {
     this.duration = 60;
   }
 
-  addPopup(image) {
+  addPopup({ image, title }) {
     this.popup.images.push(image);
+    this.popup.titles.push(title);
   }
 
   popupItem() {
     const { type, context } = this;
     const { width, height } = this.canvas;
-    const { images, timer, duration, count } = this.popup;
+    const { images, titles, timer, duration, count } = this.popup;
     const items = (type === 'text' || type === 'logo') ? this[`${type}Items`] : this.items;
     if (count > items.length) return;
     const size = tween(timer, 0, 300, duration / 2, 'ease-out');
+    context.save();
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillStyle = '#ffffff';
+    context.font = `bold ${size / 8}px 'microsoft yahei'`;
+    context.fillText(titles[0], width / 2, height / 2 + size * 0.64);
+    context.beginPath();
+    context.arc(width / 2, height / 2, size / 2, 0, Math.PI * 2, true);
+    context.closePath();
+    context.shadowColor = '#ffffff';
+    context.shadowBlur = 15;
+    context.stroke();
+    context.beginPath();
+    context.arc(width / 2, height / 2, size / 2, 0, Math.PI * 2, true);
+    context.closePath();
+    context.clip();
     context.drawImage(images[0], (width - size) / 2, (height - size) / 2, size, size);
+    context.restore();
     this.popup.timer += 1;
     if (this.popup.timer === duration) {
       this.randUpdate(items, this.popup.images.shift());
+      this.popup.titles.shift();
       this.popup.timer = 0;
       this.popup.count += 1;
     }

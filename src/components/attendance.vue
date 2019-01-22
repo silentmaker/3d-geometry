@@ -97,10 +97,11 @@ export default {
       const newAttends = isInit ? newAvatars : newAvatars.filter(item => oldAvatars.indexOf(item) === -1);
       newAttends.map((item) => {
         const image = new Image();
+        const title = 'Somebody';
         image.onload = () => {
           // Previous attended avatars show immediately
           if (isInit) this.shape.randUpdate(this.shape.items, image);
-          else this.shape.addPopup(image);
+          else this.shape.addPopup({ image, title });
         };
         image.src = item;
       });
